@@ -114,7 +114,7 @@ struct Rectangle button = {
     {
 
     	// Doing stuff
-    	if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec((Vector2){GetMouseX(), GetMouseY()}, button) == 0){
+    	if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec((Vector2){GetMouseX(), GetMouseY()}, button) == 1){
     		if(inputMode == 1){
     			inputMode = 2;
     			modeButton.text = "mouse mode";

@@ -82,7 +82,7 @@ int main(void)
     Font silver = LoadFont("./assets/Silver.ttf");
     FILE *configPtr;
     if(!FileExists("./assets/.pongConf")){
-        configPtr = fopen("./.pongConf", "w");
+        configPtr = fopen("./assets/.pongConf", "w");
         fprintf(configPtr, "showFPS=1;\n");
         fprintf(configPtr, "audio=1;\n");
         fclose(configPtr); 
@@ -104,12 +104,16 @@ int main(void)
    char *settings = LoadFileText("./assets/.pongConf");
    char *scoreStr = (char*)malloc(4 * sizeof(char));
    char *scoreStr2 = (char*)malloc(4 * sizeof(char));
+   bool isPressed = false;
 
     Rectangle button1 = {screenWidth/2, screenHeight/2 - 80, 350, 65};
     Rectangle button2 = {screenWidth/2, screenHeight/2, 460, 65};
     Rectangle button3 = {screenWidth/2, screenHeight/2 + 80, 285, 65};
     Rectangle button4 = {screenWidth/2, screenHeight/2 + 160, 135, 65};
     Rectangle button5 = {40, 40, 210, 65};
+    Rectangle button6 = {screenWidth - 220, screenHeight - 105, 180, 65};
+    Rectangle textbox1 = {screenWidth/11, screenHeight/3, 700, 65};
+    Rectangle textbox2 = {screenWidth/11*2, screenHeight/3*2, 480, 65};
     
     Rectangle paddle1 = {10, p1Y - 50, 10, 100};
     Rectangle paddle2 = {screenWidth - 20, p2Y - 50, 10, 100};
@@ -148,7 +152,47 @@ int main(void)
 
     	// Settings
         if(scene == 1){
-            ;;
+            // Back Button
+            if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec(GetMousePosition(), button5) == 1){
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){PlaySound(buttonHoverSound);}
+                settings = LoadFileText("./assets/.pongConf");
+                scene = 0;
+            }
+            // Apply Button
+            if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec(GetMousePosition(), button6) == 1){
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){PlaySound(buttonHoverSound);}
+                    remove("./assets/.pongConf");
+                    configPtr = fopen("./assets/.pongConf", "w");
+                    fprintf(configPtr, "showFPS=");
+                    fprintf(configPtr, "%c;\n", settings[(TextFindIndex(settings, "showFPS=") + 8)]);
+                    fprintf(configPtr, "audio=");
+                    fprintf(configPtr, "%c;\n", settings[(TextFindIndex(settings, "audio=") + 6)]);
+                    fclose(configPtr); 
+                scene = 0;
+            }
+            // FPS check
+            if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec(GetMousePosition(), (Rectangle){screenWidth/2, screenHeight/3, 80, 80}) == 1 && isPressed == false){
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){PlaySound(buttonHoverSound);}
+                if(settings[(TextFindIndex(settings, "showFPS=") + 8)] == '1'){
+                    settings[(TextFindIndex(settings, "showFPS=") + 8)] = '0';
+                }else{
+                    settings[(TextFindIndex(settings, "showFPS=") + 8)] = '1';
+                }
+                isPressed = true;
+            }
+            // Audio check
+            if(IsMouseButtonDown(0) == 1 && CheckCollisionPointRec(GetMousePosition(), (Rectangle){screenWidth/2, screenHeight/3*2, 80, 80}) == 1 && isPressed == false){
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){PlaySound(buttonHoverSound);}
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){
+                    settings[(TextFindIndex(settings, "audio=") + 6)] = '0';
+                }else{
+                    settings[(TextFindIndex(settings, "audio=") + 6)] = '1';
+                }
+                isPressed = true;
+            }
+            if(IsMouseButtonDown(0) == 0){
+                isPressed = false;
+            }
         }
 
         // Gameplay
@@ -252,21 +296,25 @@ int main(void)
             if(scene == 1){
                 ClearBackground((Color){0, 20, 41, 255}); // Deep blue
                 // Back button
+                DrawRectangleRec(button5, SPECIALCOLOR);
                 DrawTextEx(silver, "< Back", (Vector2){40, 40}, 120, 4, RAYWHITE);
                 // Apply button
-
-
+                DrawRectangleRec(button6, SPECIALCOLOR);
+                DrawTextEx(silver, "Apply", (Vector2){screenWidth - 220, screenHeight - 105}, 120, 4, RAYWHITE);
                 // FPS Option
-                DrawTextEx(silver, "Draw FPS Counter   -", (Vector2){screenWidth/11, screenHeight/3}, 120, 4, RAYWHITE);
-                DrawRectangle(screenWidth/2, screenHeight/3, 80, 80, BLACK);
-                DrawTexture(checkmark, screenWidth/2, screenHeight/3, GREEN);
-
+                DrawRectangleRec(textbox1, SPECIALCOLOR);
+                DrawTextEx(silver, "Draw FPS Counter  -", (Vector2){screenWidth/11, screenHeight/3}, 120, 4, RAYWHITE);
+                DrawRectangle(screenWidth/2, screenHeight/3, 80, 80, DARKPURPLE);
+                if(settings[(TextFindIndex(settings, "showFPS=") + 8)] == '1'){
+                    DrawTexture(checkmark, screenWidth/2, screenHeight/3, GREEN);
+                }
                 // Audio option
-                DrawTextEx(silver, "Play Audio   -", (Vector2){(screenWidth/11)*2, (screenHeight/3)*2}, 120, 4, RAYWHITE);
-
-                // Back button rect
-                DrawRectangleRec(button5, SPECIALCOLOR);
-                
+                DrawRectangleRec(textbox2, SPECIALCOLOR);
+                DrawTextEx(silver, "Play Audio  -", (Vector2){(screenWidth/11)*2, (screenHeight/3)*2}, 120, 4, RAYWHITE);
+                DrawRectangle(screenWidth/2, screenHeight/3*2, 80, 80, DARKPURPLE);
+                if(settings[(TextFindIndex(settings, "audio=") + 6)] == '1'){
+                    DrawTexture(checkmark, screenWidth/2, screenHeight/3*2, GREEN);
+                }
                 if(settings[(TextFindIndex(settings, "showFPS=") + 8)] == '1'){DrawFPS(10, 10);}
             }
 

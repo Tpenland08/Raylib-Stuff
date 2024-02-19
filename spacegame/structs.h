@@ -27,3 +27,10 @@ typedef struct bullet{
     float speed;
     float lifetime;
 } bullet;
+
+typedef struct planet{
+	Vector2 worldPos;
+	float size;
+	float gravity;
+	Texture2D texture;
+} planet;

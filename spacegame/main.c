@@ -20,8 +20,8 @@ Warp : Q
 #define MAX_BULLETS 10
 #define HEALTH_WIDTH 400
 
-#define TRANSPARENTMAGENTA (Color){ 255, 0, 255, 155 }
-#define TRANSPARENTGRAY (Color){80, 80, 80, 165 }
+#define TRANSPARENTGRAY (Color){ 60, 60, 65, 155 }
+#define TRANSPARENTBLUE (Color){ 69, 69, 169, 155 }
 
 // Set true to close game
 bool exitWindow = false;
@@ -89,8 +89,25 @@ int main(void)
     Texture2D characterOn = LoadTextureFromImage(characterOnImage);
 
     // Background
-    Image backgroundImage = LoadImage("./bg.png");
-    Texture2D background = LoadTextureFromImage(backgroundImage);
+    Texture2D background = LoadTexture("./bg.png");
+
+    // PLANETS
+    Image planetOneImage = LoadImage("./planet1.png");
+    Image planetTwoImage = LoadImage("./planet2.png");
+    Image planetThreeImage = LoadImage("./planet3.png");
+    Image blackHoleImage = LoadImage("./blackHole.png");
+    ImageResizeNN(&planetOneImage, 480, 480);
+    ImageResizeNN(&planetTwoImage, 480, 480);
+    ImageResizeNN(&planetThreeImage, 480, 480);
+    ImageResizeNN(&blackHoleImage, 480, 480);
+    Texture2D planetOneTexture = LoadTextureFromImage(planetOneImage);
+    Texture2D planetTwoTexture = LoadTextureFromImage(planetTwoImage);
+    Texture2D planetThreeTexture = LoadTextureFromImage(planetThreeImage);
+    Texture2D blackHoleTexture = LoadTextureFromImage(blackHoleImage);
+    UnloadImage(planetOneImage);
+    UnloadImage(planetTwoImage);
+    UnloadImage(planetThreeImage);
+    UnloadImage(blackHoleImage);
 
     // Explosion animation
     Image explosionImage = LoadImage("./explosion.png");
@@ -102,6 +119,7 @@ int main(void)
     Rectangle explosionFrame6 = {159, 0, 32, 32};
     Rectangle explosionFrame7 = {191, 0, 32, 32};
     Texture2D explosion = LoadTextureFromImage(explosionImage);
+    UnloadImage(explosionImage);
 
     // GUNS
     Image defaultGunImage = LoadImage("./defaultGun.png");
@@ -132,6 +150,8 @@ int main(void)
     sprintf(sensStr, "%d", (int)sens);
     char nearestSideStr[9];
     bullet bullets[MAX_BULLETS];
+    int gameSeed = GetRandomValue(0, 696969);
+    Vector2 bufferV2;
 
     char xPosStr[16];
     char yPosStr[16];
@@ -156,6 +176,13 @@ int main(void)
         0, // when last fired
         13, // bullet speed
         10 // ammo
+    };
+
+    planet planetOne = {
+        {1000, 1000}, // World Position
+        480, // Size (Pixels)
+        4, // Gravity
+        planetOneTexture // Texture
     };
 
     // Button Boxes
@@ -218,9 +245,7 @@ int main(void)
                     player.worldPos.z += sens * 1.5;
                 }
                 if(IsKeyDown(KEY_R)){
-                    PlaySound(explosionSound);
-                    exploding = true;
-                    explosionFrame = 1;
+                    player.health = 0;
                 }
                 if(IsKeyDown(KEY_Q) && GetTime() - warpStart >= 5){
                     PlaySound(warpSound);
@@ -251,6 +276,14 @@ int main(void)
                     }
                 }
             }
+
+            // Planet Collision
+            if(CheckCollisionCircles((Vector2){planetOne.worldPos.x + planetOne.size / 2, planetOne.worldPos.y + planetOne.size / 2}, planetOne.size / 2, (Vector2){player.worldPos.x, player.worldPos.y}, 21) && !exploding){
+                player.health = 0;
+            }
+
+            // Planet gravity
+
 
             // Moving Math + Cam follow
             if(!exploding){
@@ -287,6 +320,9 @@ int main(void)
                     explosionFrame = 1;
                     player.health = player.maxHealth;
             }
+            if(player.health > player.maxHealth){
+                player.health = player.maxHealth;
+            }
 
             // Bullet moving & Stuff
             for (int i = 0; i < MAX_BULLETS; i++) {
@@ -294,16 +330,10 @@ int main(void)
                     bullets[i].worldPos.x += bullets[i].velo.x;
                     bullets[i].worldPos.y += bullets[i].velo.y;
                     bullets[i].lifetime -= 1;
+                    if(CheckCollisionPointCircle((Vector2){bullets[i].worldPos.x, bullets[i].worldPos.y}, (Vector2){planetOne.worldPos.x + planetOne.size / 2, planetOne.worldPos.y + planetOne.size / 2}, planetOne.size / 2)){
+                        bullets[i].lifetime = 0;
+                    }
                 }
-            }
-
-            // STUFF
-            lastKey = GetKeyPressed();
-            if(lastKey == KEY_J){
-                player.health++;
-            }
-            if(lastKey == KEY_K){
-                player.health--;
             }
 
             // UI Pos
@@ -361,10 +391,10 @@ int main(void)
                     case 1:
                         if(GetMasterVolume() == 0){
                             SetMasterVolume(0.8);
-                            muteButton.width = 385;
+                            muteButton.width = 287.5;
                         }else{
                             SetMasterVolume(0);
-                            muteButton.width = 287.5;
+                            muteButton.width = 385;
                         }
                         break;
                     case 2:
@@ -394,13 +424,18 @@ int main(void)
         BeginDrawing();
 
             BeginMode2D(mainCamera);
+
             // Background
             ClearBackground(RAYWHITE);
             DrawTexturePro(background, (Rectangle){0, 0, 482, 321}, (Rectangle){roundNumber(player.worldPos.x, screenWidth), roundNumber(player.worldPos.y, screenHeight), screenWidth, screenHeight}, (Vector2){0, 0}, 0, WHITE);
             DrawTexturePro(background, (Rectangle){0, 0, 482, 321}, (Rectangle){roundNumber(player.worldPos.x, screenWidth) - screenWidth, roundNumber(player.worldPos.y, screenHeight), screenWidth, screenHeight}, (Vector2){0, 0}, 0, WHITE);
             DrawTexturePro(background, (Rectangle){0, 0, 482, 321}, (Rectangle){roundNumber(player.worldPos.x, screenWidth) - screenWidth, roundNumber(player.worldPos.y, screenHeight) - screenHeight, screenWidth, screenHeight}, (Vector2){0, 0}, 0, WHITE);
             DrawTexturePro(background, (Rectangle){0, 0, 482, 321}, (Rectangle){roundNumber(player.worldPos.x, screenWidth), roundNumber(player.worldPos.y, screenHeight) - screenHeight, screenWidth, screenHeight}, (Vector2){0, 0}, 0, WHITE);
+
+            DrawTexture(planetOne.texture, planetOne.worldPos.x, planetOne.worldPos.y, WHITE);
+
             EndMode2D();
+
 
             // If Game active
             if(gamePaused == 0){
@@ -447,7 +482,6 @@ int main(void)
                     }
                 }
 
-
             EndMode2D();
 
             // In Game HUD
@@ -455,10 +489,10 @@ int main(void)
             DrawRectangleRounded((Rectangle){0, screenHeight - 100, screenWidth, 200}, 0.3, 7, LIGHTGRAY);
 
             // Ammo Count
-            DrawRectangle(20, screenHeight - 80, 310, 60, GRAY);
+            DrawRectangleRounded((Rectangle){20, screenHeight - 80, 310, 60}, 0.4, 7, GRAY);
             for(int i = 30; i <= defaultGun.ammo * 30; i += 30){
                 if(defaultGun.ammo > i / 30 - 1){
-                    DrawRectangle(i, screenHeight - 70, 20, 40, YELLOW);
+                    DrawRectangleRounded((Rectangle){i, screenHeight - 70, 20, 40}, 0.35, 5, YELLOW);
                 }
             }
 
@@ -479,36 +513,36 @@ int main(void)
             }
 
             // Coords
-            DrawText("X:", 30, 40, 30, GREEN);
-            DrawText(xPosStr, 65, 40, 30, GREEN);
-            DrawText("Y:", 30, 80, 30, GREEN);
-            DrawText(yPosStr, 65, 80, 30, GREEN);
+            DrawTextEx(silver, "X:", (Vector2){30, 40}, 60, 4, GREEN);
+            DrawTextEx(silver, xPosStr, (Vector2){70, 40}, 60, 4, GREEN);
+            DrawTextEx(silver, "Y:", (Vector2){30, 80}, 60, 4, GREEN);
+            DrawTextEx(silver, yPosStr, (Vector2){70, 80}, 60, 4, GREEN);
 
             }else{ // Draw Menu
-                DrawRectangleRec(menu, TRANSPARENTGRAY);
+                DrawRectangleRounded(menu, 0.1, 7, TRANSPARENTGRAY);
                 if(itemSelected == 0){
-                    DrawRectangleRec(unpauseButton, TRANSPARENTMAGENTA);
+                    DrawRectangleRec(unpauseButton, TRANSPARENTBLUE);
                 }
                 DrawTextEx(silver, "[Unpause]", (Vector2){unpauseButton.x, unpauseButton.y - 15}, 150, 10, RAYWHITE);
                 if(itemSelected == 1){
-                    DrawRectangleRec(muteButton, TRANSPARENTMAGENTA);
+                    DrawRectangleRec(muteButton, TRANSPARENTBLUE);
                 }
                 if(GetMasterVolume() == 0){
-                    DrawTextEx(silver, "[Mute]", (Vector2){muteButton.x, muteButton.y - 15}, 150, 10, RAYWHITE);
-                }else{
                     DrawTextEx(silver, "[Unmute]", (Vector2){muteButton.x, muteButton.y - 15}, 150, 10, RAYWHITE);
+                }else{
+                    DrawTextEx(silver, "[Mute]", (Vector2){muteButton.x, muteButton.y - 15}, 150, 10, RAYWHITE);
                 }
                 if(itemSelected == 2){
-                    DrawRectangleRec(resetButton, TRANSPARENTMAGENTA);
+                    DrawRectangleRec(resetButton, TRANSPARENTBLUE);
                 }
                 DrawTextEx(silver, "[Reset]", (Vector2){resetButton.x, resetButton.y - 15}, 150, 10, RAYWHITE);
                 if(itemSelected == 3){
-                    DrawRectangleRec(sensSlider, TRANSPARENTMAGENTA);
+                    DrawRectangleRec(sensSlider, TRANSPARENTBLUE);
                 }
                 DrawTextEx(silver, "[Sens: ]", (Vector2){sensSlider.x, sensSlider.y - 15}, 150, 10, RAYWHITE);
                 DrawTextEx(silver, sensStr, (Vector2){sensSlider.x + 300, sensSlider.y - 15}, 150, 10, RAYWHITE);
                 if(itemSelected == 4){
-                    DrawRectangleRec(quitButton, TRANSPARENTMAGENTA);
+                    DrawRectangleRec(quitButton, TRANSPARENTBLUE);
                 }
                 DrawTextEx(silver, "[Quit]", (Vector2){quitButton.x, quitButton.y - 15}, 150, 10, RAYWHITE);
             }
@@ -522,8 +556,6 @@ int main(void)
     // CLEAN UP
     UnloadImage(characterOnImage);
     UnloadImage(characterOffImage);
-    UnloadImage(backgroundImage);
-    UnloadImage(explosionImage);
     UnloadImage(defaultGunImage);
     UnloadTexture(characterOn);
     UnloadTexture(characterOff);
